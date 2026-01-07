@@ -1,0 +1,28 @@
+{
+  "https://example1.com": {
+    "default-src": [
+      "www.vend1.com",
+      "www.vend2.com"
+    ],
+    "script-src": [
+      "www.vend3.com",
+      "www.vend4.com"
+    ],
+    "frame-src": [
+      "www.vend8.com"
+    ]
+  },
+  "www.example2.com": {
+    "default-src": [
+      "www.vend1.com",
+      "www.vend2.com"
+    ],
+    "script-src": [
+      "www.vend3.com",
+      "www.vend4.com"
+    ],
+    "frame-src": [
+      "www.vend8.com"
+    ]
+  }
+}
