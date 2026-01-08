@@ -5,6 +5,7 @@ import re
 default_str = 'default-src'
 script_str = 'script-src'
 frame_str = 'frame-src'
+directive_list = ['default-src','script-src','frame-src']
 
 def get_csp(url):
     print(f'Getting csp from: {url} ...')
@@ -22,30 +23,14 @@ def format_csp(policy):
         "frame-src": []
     }
     for i in policy:
-        if i.lstrip().startswith(default_str):
-            default_src = i
-            for p in default_src.split(' '):
-                p = remove_quotes(p)
-                if not p == '' and not p.strip() == default_str and is_not_nonce_or_hash(p):
-                    csp[default_str].append(p)
-        if i.lstrip().startswith(script_str):
-            script_src = i
-            for p in script_src.split(' '):
-                p = remove_quotes(p)
-                if not p == '' and not p.strip() == script_str and is_not_nonce_or_hash(p):
-                    csp[script_str].append(p)
-        if i.lstrip().startswith(frame_str):
-            frame_src = i
-            for p in frame_src.split(' '):
-                p = remove_quotes(p)
-                if not p == '' and not p.strip() == frame_str and is_not_nonce_or_hash(p):
-                    csp[frame_str].append(p)
-    return csp
+        csp_split = i.strip().split(' ')
+        if csp_split[0].strip() in directive_list:
+            for p in csp_split[1:]:
+                p = p.replace('\'', '').replace('"', '').strip()
+                if is_not_nonce_or_hash(p):
+                    csp[csp_split[0].strip()].append(p)
 
-def remove_quotes(string):
-    if string.startswith("'") and string.endswith("'") or string.startswith("'") and string.endswith("'"):
-        string = string[1:-1].strip()
-    return string
+    return csp
 
 def is_not_nonce_or_hash(string):
     nonce_re = re.compile(r'^nonce-([a-zA-Z0-9+/_-]+={0,2})$')
