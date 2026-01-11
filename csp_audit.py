@@ -2,13 +2,12 @@ import requests
 import json
 import re
 
-default_str = 'default-src'
-script_str = 'script-src'
-frame_str = 'frame-src'
-directive_list = ['default-src','script-src','frame-src']
+# Setting the directives to audit. Additional directives can be defined here to expand checks.
+directive_list = ['default-src', 'script-src', 'frame-src']
 
+# Web request to get the live policy. Returns csp_full list, split for each directive.
 def get_csp(url):
-    print(f'Getting csp from: {url} ...')
+    print(f'Getting csp for: {url} ...')
     try:
         r = requests.get(url)
         csp_full = r.headers['content-security-policy'].split(';')
@@ -16,12 +15,11 @@ def get_csp(url):
     except requests.exceptions.RequestException as e:
         print(e)
 
+# Formatting to json. Returns csp list containing each directive defined in directive_list.
 def format_csp(policy):
-    csp = {
-        "default-src": [],
-        "script-src": [],
-        "frame-src": []
-    }
+    csp = {}
+    for directive in directive_list:
+        csp[directive] = []
     for i in policy:
         csp_split = i.strip().split(' ')
         if csp_split[0].strip() in directive_list:
@@ -32,6 +30,7 @@ def format_csp(policy):
 
     return csp
 
+# Checks if the current value is a nonce or hash.
 def is_not_nonce_or_hash(string):
     nonce_re = re.compile(r'^nonce-([a-zA-Z0-9+/_-]+={0,2})$')
     hash_re = re.compile(r'^(sha256|sha384|sha512)-([a-zA-Z0-9+/_-]+={0,2})$')
@@ -43,33 +42,49 @@ def is_not_nonce_or_hash(string):
     else:
         return True
 
+# Initial auditing function to see if the lists match.
 def is_matching(rec_policy, live_policy):
     if sorted(live_policy) == sorted(rec_policy):
         return True
     else:
         return False
 
+# More in depth auditing function to return the discrepancies.
+def compare_policies(rec_policy, live_policy):
+    rec_policy = sorted(rec_policy)
+    live_policy = sorted(live_policy)
+    for i in rec_policy:
+        if i not in live_policy:
+            print(f'\t\tMismatch found: {i} is in rec_policy but not in live_policy\n')
+    for i in live_policy:
+        if i not in rec_policy:
+            print(f'\t\tMismatch found: {i} is in live_policy but not in rec_policy\n')
+    print('Recorded Policy: \n' + json.dumps(rec_policy, indent=4))
+    print('Live Policy: \n' + json.dumps(live_policy, indent=4))
+
 def main():
+    # File read for the recorded policy
     with open('csp.json', 'r') as f:
         all_policy = json.load(f)
+        # Checking policy for each URL defined in csp.json
         for key in all_policy.keys():
+            print('--------------------------------------------------------------------')
             live_policy = format_csp(get_csp(key))
-            def_rec_policy = all_policy[key][default_str]
-            scr_rec_policy = all_policy[key][script_str]
-            frm_rec_policy = all_policy[key][frame_str]
-
-            if is_matching(live_policy[default_str], def_rec_policy):
-                print(f'Default source matching for {key}')
-            else:
-                print(f'Default source not matching for {key}')
-            if is_matching(live_policy[script_str], scr_rec_policy):
-                print(f'Script source matching for {key}')
-            else:
-                print(f'Script source not matching for {key}')
-            if is_matching(live_policy[frame_str], frm_rec_policy):
-                print(f'Frame source matching for {key}')
-            else:
-                print(f'Frame source not matching for {key}')
+            for p in directive_list:
+                if not is_matching(all_policy[key][p], live_policy[p]):
+                    print(f'\n\t- {p} policy mismatch for: {key}')
+                    # If-Else checks just for easier traceability on the discrepancy.
+                    if len(all_policy[key][p]) > len(live_policy[p]):
+                        print(f'\n\t- The recorded policy for the directive {p} has an extra entry:\n')
+                        compare_policies(all_policy[key][p], live_policy[p])
+                    elif len(all_policy[key][p]) < len(live_policy[p]):
+                        print(f'\n\t- The recorded policy for the directive {p} is missing an entry:\n')
+                        compare_policies(all_policy[key][p], live_policy[p])
+                    else:
+                        print(f'\n\t- The {p} policy does not match:\n')
+                        compare_policies(all_policy[key][p], live_policy[p])
+                else:
+                    print(f'\n\t- {p} policy is matching for: {key}')
 
 if __name__ == "__main__":
     main()

@@ -7,10 +7,7 @@ This is currently only set up to check for the directives:
 + script-src
 + frame-src
 
-Additional directives can be added by:
-1. Adding a new string definition variable (i.e. image_str = 'image-src')
-2. Adding the new directive to the directive_list list
-3. Adding the new directive to the csp list within format_csp()
+Additional directives can be added by modifying directive_list.
 
 ## Use
 
@@ -20,4 +17,4 @@ csp_onboard.py can be used to create the file, appending a new CSP to the list.
 csp_onboard.py {URL}
 ```
 
-Once you have an audit file, csp_audit.py can be run periodically to check that the policy hasn't changed.
+Once you have an audit file, csp_audit.py can be run periodically to audit for policy changes.
