@@ -18,3 +18,38 @@ csp_onboard.py {URL}
 ```
 
 Once you have an audit file, csp_audit.py can be run periodically to audit for policy changes.
+
+Example - Audit Passed
+```
+Getting csp for: https://example.com/ ...
+
+	- default-src policy is matching for: https://example.com/
+
+	- script-src policy is matching for: https://example.com/
+
+	- frame-src policy is matching for: https://example.com/
+```
+Example - Audit Failed
+```
+Getting csp for: https://example.com/ ...
+
+	- default-src policy mismatch for: https://example.com/
+
+	- The recorded policy for the directive default-src has an extra entry:
+
+		Mismatch found: vendor.com is in rec_policy but not in live_policy
+
+Recorded Policy: 
+[
+    "vendor.com",
+    "self"
+]
+Live Policy: 
+[
+    "self"
+]
+
+	- script-src policy is matching for: https://example.com/
+
+	- frame-src policy is matching for: https://example.com/
+```
